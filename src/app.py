@@ -1,10 +1,28 @@
 import joblib
 
+from flask import Flask, request, jsonify
+
+
+app = Flask(__name__)
 
 model = joblib.load("model.joblib")
 
-text = input("問い合わせ内容を入力してください: ")
 
-prediction = model.predict([text])
+@app.route("/predict", methods=["POST"])
+def predict():
+    data = request.get_json()
 
-print(f"予測結果: {prediction[0]}")
+    text = data["text"]
+
+    prediction = model.predict([text])[0]
+
+    return jsonify(
+        {
+            "text": text,
+            "prediction": prediction,
+        }
+    )
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
