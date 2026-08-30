@@ -1,2 +1,4 @@
-# gcp-ml-inference-demo
-A simple machine learning inference system using Google Cloud and Vertex AI
+- Dockerized Flask ML API
+- Artifact Registry
+- Cloud Run deployment
+- Public prediction endpoint
