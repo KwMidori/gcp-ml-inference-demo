@@ -5,7 +5,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY model.joblib .
 COPY src ./src
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "src.app:app"]

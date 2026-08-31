@@ -3,3 +3,4 @@ gunicorn
 joblib
 pandas
 scikit-learn
+google-cloud-storage

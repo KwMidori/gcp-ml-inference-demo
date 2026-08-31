@@ -1,12 +1,36 @@
 import os
+import tempfile
 import joblib
 
 from flask import Flask, request, jsonify
+from google.cloud import storage
 
 
 app = Flask(__name__)
 
-model = joblib.load("model.joblib")
+BUCKET_NAME = "gcp-ml-inference-demo-eh01-models"
+MODEL_NAME = "model.joblib"
+
+LOCAL_MODEL_PATH = os.path.join(
+    tempfile.gettempdir(),
+    "model.joblib",
+)
+
+
+def download_model():
+    client = storage.Client()
+
+    bucket = client.bucket(BUCKET_NAME)
+    blob = bucket.blob(MODEL_NAME)
+
+    blob.download_to_filename(LOCAL_MODEL_PATH)
+
+    print("Model downloaded from Cloud Storage.")
+
+
+download_model()
+
+model = joblib.load(LOCAL_MODEL_PATH)
 
 
 @app.route("/predict", methods=["POST"])
