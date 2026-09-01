@@ -12,19 +12,14 @@ from sklearn.metrics import (
 )
 
 
-df = pd.read_csv("data/training_data_100.csv")
+df_train = pd.read_csv("data/training_data_v3.csv")
+df_test = pd.read_csv("data/challenge_data.csv")
 
-texts = df["text"]
-labels = df["label"]
+X_train = df_train["text"]
+y_train = df_train["label"]
 
-
-X_train, X_test, y_train, y_test = train_test_split(
-    texts,
-    labels,
-    test_size=0.3,
-    random_state=42,
-    stratify=labels,
-)
+X_test = df_test["text"]
+y_test = df_test["label"]
 
 
 model = Pipeline(
@@ -182,6 +177,6 @@ def explain_prediction(text):
 explain_prediction("領収書を発行できますか")
 
 
-joblib.dump(model, "model.joblib")
+joblib.dump(model, "model_v3.joblib")
 
-print("\nモデルを model.joblib に保存しました")
+print("\nモデルを model_v3.joblib に保存しました")
