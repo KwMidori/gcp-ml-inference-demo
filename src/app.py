@@ -8,8 +8,16 @@ from google.cloud import storage
 
 app = Flask(__name__)
 
-BUCKET_NAME = "gcp-ml-inference-demo-eh01-models"
-MODEL_NAME = "model.joblib"
+
+BUCKET_NAME = os.environ.get(
+    "MODEL_BUCKET",
+    "gcp-ml-inference-demo-eh01-models",
+)
+
+MODEL_OBJECT = os.environ.get(
+    "MODEL_OBJECT",
+    "models/v1/model.joblib",
+)
 
 LOCAL_MODEL_PATH = os.path.join(
     tempfile.gettempdir(),
@@ -21,7 +29,9 @@ def download_model():
     client = storage.Client()
 
     bucket = client.bucket(BUCKET_NAME)
-    blob = bucket.blob(MODEL_NAME)
+    blob = bucket.blob(MODEL_OBJECT)
+
+    print(f"Model downloaded: gs://{BUCKET_NAME}/{MODEL_OBJECT}")
 
     blob.download_to_filename(LOCAL_MODEL_PATH)
 
