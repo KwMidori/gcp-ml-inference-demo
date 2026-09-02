@@ -1,9 +1,9 @@
 import joblib
 import pandas as pd
+import argparse
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
     accuracy_score,
@@ -12,8 +12,29 @@ from sklearn.metrics import (
 )
 
 
-df_train = pd.read_csv("data/training_data_v3.csv")
-df_test = pd.read_csv("data/challenge_data.csv")
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--train-data",
+    required=True,
+    help="学習用CSVファイル",
+)
+
+parser.add_argument(
+    "--model-out",
+    required=True,
+    help="保存するモデルファイル",
+)
+
+parser.add_argument(
+    "--eval-data",
+    required=True,
+    help="評価用CSVファイル",
+)
+args = parser.parse_args()
+
+df_train = pd.read_csv(args.train_data)
+df_test = pd.read_csv(args.eval_data)
 
 X_train = df_train["text"]
 y_train = df_train["label"]
@@ -177,6 +198,5 @@ def explain_prediction(text):
 explain_prediction("領収書を発行できますか")
 
 
-joblib.dump(model, "model_v3.joblib")
-
-print("\nモデルを model_v3.joblib に保存しました")
+joblib.dump(model, args.model_out)
+print(f"\nモデルを {args.model_out} に保存しました")
