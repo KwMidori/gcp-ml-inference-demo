@@ -1,6 +1,12 @@
 import joblib
 import pandas as pd
 import argparse
+import argparse
+import json
+
+import joblib
+import pandas as pd
+
 
 from sklearn.metrics import (
     accuracy_score,
@@ -124,3 +130,30 @@ else:
     )
 
     print(f"判定理由: {reason}")
+
+    selection_result = {
+    "selected_version": selected_model["version"],
+    "model_file": MODELS[selected_model["version"]],
+    "current_version": args.current_version,
+    "eval_data": args.eval_data,
+    "metrics": {
+        "accuracy": float(selected_model["accuracy"]),
+        "high_recall": float(selected_model["high_recall"]),
+        "normal_recall": float(selected_model["normal_recall"]),
+    },
+    "reason": reason,
+}
+
+with open(
+    "selected_model.json",
+    "w",
+    encoding="utf-8",
+) as f:
+    json.dump(
+        selection_result,
+        f,
+        ensure_ascii=False,
+        indent=2,
+    )
+
+print("\n選定結果を selected_model.json に保存しました。")
