@@ -216,3 +216,30 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Runtime logs
+logs/
+
+# MLOps generated history
+history/
+
+# Generated evaluation / selection results
+evaluation_results.csv
+selected_model.json
+
+# Python cache
+__pycache__/
+*.pyc
+# Runtime logs
+logs/
+
+# MLOps generated history
+history/
+
+# Generated evaluation / selection results
+evaluation_results.csv
+selected_model.json
+
+# Python cache
+__pycache__/
+*.pyc
