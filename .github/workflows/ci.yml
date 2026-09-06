@@ -30,3 +30,9 @@ jobs:
 
       - name: Run tests
         run: python -m pytest
+
+      - name: Evaluate models
+        run: |
+          python src/compare_models.py \
+            --eval-data data/challenge_data.csv \
+            --current-version v3
