@@ -36,3 +36,14 @@ jobs:
           python src/compare_models.py \
             --eval-data data/challenge_data.csv \
             --current-version v3
+      - name: Upload evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-evaluation-${{ github.run_id }}
+          path: |
+            evaluation_results.csv
+            selected_model.json
+            history/evaluation_results_*.csv
+            history/selected_model_*.json
+          if-no-files-found: error
+          retention-days: 14
