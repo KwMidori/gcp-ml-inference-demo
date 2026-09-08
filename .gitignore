@@ -243,3 +243,6 @@ selected_model.json
 # Python cache
 __pycache__/
 *.pyc
+
+gha-creds-*.json
+

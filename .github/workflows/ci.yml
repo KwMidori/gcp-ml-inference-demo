@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,6 +19,30 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: gcp-ml-inference-demo-eh01
+          workload_identity_provider: projects/717939482417/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: github-actions-deployer@gcp-ml-inference-demo-eh01.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Verify Google Cloud authentication
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Active account:"
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
+          echo "Configured project:"
+          gcloud config get-value project
+          echo "Testing access token generation:"
+          gcloud auth print-access-token > /dev/null
+          echo "Google Cloud authentication succeeded."
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -56,4 +84,3 @@ jobs:
             history/selected_model_*.json
           if-no-files-found: error
           retention-days: 14
-
