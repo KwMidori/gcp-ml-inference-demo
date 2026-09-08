@@ -44,6 +44,12 @@ jobs:
           gcloud auth print-access-token > /dev/null
           echo "Google Cloud authentication succeeded."
 
+      - name: Verify Cloud Storage read access
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Listing model files in Cloud Storage:"
+          gcloud storage ls gs://gcp-ml-inference-demo-eh01-models/models/
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
