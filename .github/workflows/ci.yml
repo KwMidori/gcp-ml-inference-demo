@@ -50,6 +50,23 @@ jobs:
           echo "Listing model files in Cloud Storage:"
           gcloud storage ls gs://gcp-ml-inference-demo-eh01-models/models/
 
+      - name: Verify Cloud Run read access
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Checking Cloud Run service:"
+
+          SERVICE_NAME=$(gcloud run services list \
+            --region=asia-northeast1 \
+            --project=gcp-ml-inference-demo-eh01 \
+            --filter="metadata.name=gcp-ml-inference-demo" \
+            --format="value(metadata.name)")
+
+          if [ "${SERVICE_NAME}" = "gcp-ml-inference-demo" ]; then
+            echo "Cloud Run service exists."
+          else
+            echo "Cloud Run service does not exist."
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
