@@ -65,6 +65,14 @@ jobs:
           else
             echo "Cloud Run service does not exist."
           fi
+      - name: Verify Artifact Registry read access
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Listing container images in Artifact Registry:"
+
+          gcloud artifacts docker images list \
+            asia-northeast1-docker.pkg.dev/gcp-ml-inference-demo-eh01/ml-demo \
+            --project=gcp-ml-inference-demo-eh01
 
       - name: Set up Python
         uses: actions/setup-python@v5
