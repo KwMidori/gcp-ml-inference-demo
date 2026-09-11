@@ -55,13 +55,12 @@ jobs:
         run: |
           echo "Checking Cloud Run service:"
 
-          SERVICE_NAME=$(gcloud run services list \
+          SERVICE_NAMES=$(gcloud run services list \
             --region=asia-northeast1 \
             --project=gcp-ml-inference-demo-eh01 \
-            --filter="metadata.name=gcp-ml-inference-demo" \
-            --format="value(metadata.name)")
+            --format="value(name)")
 
-          if [ "${SERVICE_NAME}" = "gcp-ml-inference-demo" ]; then
+          if printf '%s\n' "${SERVICE_NAMES}" | grep -Fxq "gcp-ml-inference-demo"; then
             echo "Cloud Run service exists."
           else
             echo "Cloud Run service does not exist."
