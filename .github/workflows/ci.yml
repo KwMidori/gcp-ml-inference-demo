@@ -71,14 +71,14 @@ jobs:
             --eval-data data/challenge_data.csv \
             --current-version v3
 
-      - name: Prepare model upload dry run
+      - name: Upload selected model if new
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           SELECTED_VERSION=$(python -c "import json; d=json.load(open('selected_model.json')); print(d['selected_version'])")
           MODEL_FILE=$(python -c "import json; d=json.load(open('selected_model.json')); print(d['model_file'])")
           DESTINATION="gs://gcp-ml-inference-demo-eh01-models/models/${SELECTED_VERSION}/model.joblib"
 
-          echo "=== Model Upload Dry Run ==="
+          echo "=== Model Upload ==="
           echo "Selected version: ${SELECTED_VERSION}"
           echo "Local model:      ${MODEL_FILE}"
           echo "Destination:      ${DESTINATION}"
@@ -88,17 +88,23 @@ jobs:
             exit 1
           fi
 
-          echo "Local model file exists."
-
           if gcloud storage ls "${DESTINATION}" > /dev/null 2>&1; then
             echo "Destination already exists."
-            echo "Upload would be skipped."
+            echo "Upload skipped."
           else
             echo "Destination does not exist."
-            echo "A new model could be uploaded here."
-          fi
+            echo "Uploading new model..."
 
-          echo "Dry Run only. No file was uploaded."
+            gcloud storage cp \
+              "${MODEL_FILE}" \
+              "${DESTINATION}" \
+              --if-generation-match=0
+
+            echo "Upload completed."
+
+            echo "Verifying uploaded model:"
+            gcloud storage ls "${DESTINATION}"
+          fi
 
       - name: Write model evaluation summary
         run: |
