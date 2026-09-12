@@ -135,6 +135,26 @@ jobs:
         run: |
           python src/prepare_cloud_run_update.py --apply
 
+      - name: Verify deployed API
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          SERVICE_URL=$(gcloud run services describe gcp-ml-inference-demo \
+            --region=asia-northeast1 \
+            --project=gcp-ml-inference-demo-eh01 \
+            --format="value(status.url)")
+
+          echo "Service URL: ${SERVICE_URL}"
+
+          RESPONSE=$(curl --fail --silent --show-error \
+            -X POST \
+            "${SERVICE_URL}/predict" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d '{"text":"至急、ログインできません"}')
+
+          echo "Response: ${RESPONSE}"
+
+          echo "${RESPONSE}" | python -c "import sys, json; data=json.load(sys.stdin); assert data['prediction'] == 'high', data"
+
       - name: Write model evaluation summary
         run: |
           echo "## Model evaluation result" >> "$GITHUB_STEP_SUMMARY"
