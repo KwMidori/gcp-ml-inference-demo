@@ -130,6 +130,11 @@ jobs:
             gcloud storage ls "${DESTINATION}"
           fi
 
+      - name: Cloud Run deployment dry run
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          python src/prepare_cloud_run_update.py
+
       - name: Write model evaluation summary
         run: |
           echo "## Model evaluation result" >> "$GITHUB_STEP_SUMMARY"
