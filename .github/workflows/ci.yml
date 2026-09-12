@@ -74,6 +74,11 @@ jobs:
             asia-northeast1-docker.pkg.dev/gcp-ml-inference-demo-eh01/ml-demo \
             --project=gcp-ml-inference-demo-eh01
 
+      - name: Configure Docker for Artifact Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -129,6 +134,21 @@ jobs:
             echo "Verifying uploaded model:"
             gcloud storage ls "${DESTINATION}"
           fi
+
+      - name: Build and push container image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          IMAGE="asia-northeast1-docker.pkg.dev/gcp-ml-inference-demo-eh01/ml-demo/gcp-ml-inference-demo:${GITHUB_SHA}"
+
+          echo "Building image: ${IMAGE}"
+
+          docker build \
+            -t "${IMAGE}" \
+            .
+
+          docker push "${IMAGE}"
+
+          echo "CLOUD_RUN_IMAGE=${IMAGE}" >> "$GITHUB_ENV"
 
       - name: Deploy Cloud Run service
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

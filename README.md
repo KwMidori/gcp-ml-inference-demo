@@ -28,53 +28,67 @@ Current capabilities include:
 - automatic deploy / update / no-op decision
 - dry-run safety for cloud-changing operations
 - one-command pipeline orchestration
+- CI/CD automation with GitHub Actions
+- keyless Google Cloud authentication with Workload Identity Federation
+- automatic model upload to Cloud Storage
+- automatic Cloud Run deploy / update / no-op handling
+- post-deployment API smoke testing
 
 ## Architecture
 
 ```text
-Training Data
-    |
-    v
-train.py
-    |
-    v
-Saved Model Artifacts
-    |
-    v
-pytest
-    |
-    v
-compare_models.py
-    |
-    +----------------------+
-    |                      |
-    v                      v
-evaluation_results.csv   selected_model.json
-    |                      |
-    v                      v
-history/                 history/
-    |                      |
-    +----------+-----------+
-               |
-               v
-        prepare_deploy.py
-               |
-               v
-         Cloud Storage
-               |
-               v
-prepare_cloud_run_update.py
-               |
-               v
-     Cloud Run state check
-               |
-       +-------+-------+
-       |               |
-       v               v
-    deploy           update
-       \               /
-        \             /
-         +---- no-op +
+Git push to main
+      |
+      v
+GitHub Actions
+      |
+      +----------------------------+
+      |                            |
+      v                            v
+Workload Identity             pytest
+Federation                        |
+      |                            v
+      |                     compare_models.py
+      |                            |
+      |                 +----------+----------+
+      |                 |                     |
+      |                 v                     v
+      |       evaluation_results.csv   selected_model.json
+      |                 |                     |
+      |                 +----------+----------+
+      |                            |
+      |                            v
+      |                 Upload selected model
+      |                     if not present
+      |                            |
+      |                            v
+      |                    Cloud Storage
+      |                            |
+      |                            v
+      |              prepare_cloud_run_update.py
+      |                            |
+      |                 +----------+----------+
+      |                 |          |          |
+      |                 v          v          v
+      |               deploy     update      no-op
+      |                 \          |          /
+      |                  \         |         /
+      |                   +--------+--------+
+      |                            |
+      |                            v
+      +-----------------------> Cloud Run
+                                   |
+                         loads selected model
+                                   |
+                                   v
+                              POST /predict
+                                   |
+                                   v
+                         API smoke test in CI
+
+Artifact Registry
+      |
+      +------ container image ------> Cloud Run
 ```
 
 The main steps can also be executed together through `run_pipeline.py`.
@@ -92,6 +106,8 @@ The main steps can also be executed together through `run_pipeline.py`.
 - Google Cloud Storage
 - Artifact Registry
 - Cloud Run
+- GitHub Actions
+- Workload Identity Federation
 
 ## Model
 
@@ -481,8 +497,8 @@ The workflow includes several safeguards:
 
 - automated tests run before model evaluation
 - pipeline stops immediately on test or command failure
-- cloud-changing actions are disabled by default
-- explicit flags are required for upload or Cloud Run changes
+- local cloud-changing scripts use dry-run behavior unless explicit flags are provided
+- CI/CD on `main` performs authenticated cloud changes only after tests and model evaluation succeed
 - existing model versions in Cloud Storage are not overwritten
 - actual Cloud Run state is checked before deployment decisions
 - unnecessary model switches are avoided
@@ -509,9 +525,11 @@ These files are generated locally and are ignored through `.gitignore`.
 
 ## Cost Management
 
-Cloud Run is deployed only when needed for testing.
+The CI/CD workflow checks the current Cloud Run state before making changes.
 
-After verification, the service can be deleted:
+If the selected model is already active, no new Cloud Run revision is created.
+
+Cloud Run can be deleted when the demonstration service is not needed:
 
 ```powershell
 gcloud.cmd run services delete gcp-ml-inference-demo `
@@ -530,3 +548,5 @@ A successful cleanup shows:
 ```text
 Listed 0 items.
 ```
+
+Cloud Storage model artifacts and Artifact Registry container images remain stored separately even when the Cloud Run service is deleted.

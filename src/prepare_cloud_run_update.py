@@ -10,11 +10,16 @@ SERVICE_NAME = "gcp-ml-inference-demo"
 REGION = "asia-northeast1"
 GCLOUD = "gcloud.cmd" if os.name == "nt" else "gcloud"
 
-IMAGE = (
+DEFAULT_IMAGE = (
     "asia-northeast1-docker.pkg.dev/"
     "gcp-ml-inference-demo-eh01/"
     "ml-demo/"
     "gcp-ml-inference-demo:latest"
+)
+
+IMAGE = os.environ.get(
+    "CLOUD_RUN_IMAGE",
+    DEFAULT_IMAGE,
 )
 
 MODEL_BUCKET = "gcp-ml-inference-demo-eh01-models"
@@ -43,7 +48,7 @@ def cloud_run_service_exists():
         raise RuntimeError(
             "Cloud Runの状態確認に失敗しました。\n"
             + result.stderr
-    )
+        )
 
     service_names = {
         line.strip()
@@ -52,6 +57,7 @@ def cloud_run_service_exists():
     }
 
     return SERVICE_NAME in service_names
+
 
 def get_current_model_object():
     """Cloud Runで実際に使用中のMODEL_OBJECTを取得する。"""
@@ -88,6 +94,37 @@ def get_current_model_object():
             return env.get("value")
 
     return None
+
+
+def get_current_image():
+    """Cloud Runで実際に使用中のコンテナイメージを取得する。"""
+
+    command = [
+        GCLOUD,
+        "run",
+        "services",
+        "describe",
+        SERVICE_NAME,
+        f"--region={REGION}",
+        "--format=json",
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    service = json.loads(result.stdout)
+
+    return (
+        service["spec"]
+        ["template"]
+        ["spec"]
+        ["containers"][0]
+        .get("image")
+    )
 
 
 def main():
@@ -140,6 +177,7 @@ def main():
 
         print("\n判定: 新規デプロイが必要です。")
         print(f"MODEL_OBJECT={selected_object}")
+        print(f"IMAGE={IMAGE}")
 
         if not args.apply:
             print("\n--- Dry Run ---")
@@ -168,13 +206,22 @@ def main():
     )
 
     current_object = get_current_model_object()
+    current_image = get_current_image()
 
     print("\n実際のCloud Run設定:")
     print(f"current MODEL_OBJECT:  {current_object}")
     print(f"selected MODEL_OBJECT: {selected_object}")
+    print(f"current image:         {current_image}")
+    print(f"selected image:        {IMAGE}")
 
-    if current_object == selected_object:
-        print("\n現行モデルと選定モデルが同じです。")
+    model_changed = current_object != selected_object
+    image_changed = current_image != IMAGE
+
+    if not model_changed and not image_changed:
+        print(
+            "\nモデルとコンテナイメージの両方が"
+            "現行と同じです。"
+        )
         print("Cloud Run の更新は不要です。")
         return
 
@@ -185,10 +232,17 @@ def main():
         "update",
         SERVICE_NAME,
         f"--region={REGION}",
+        f"--image={IMAGE}",
         f"--update-env-vars=MODEL_OBJECT={selected_object}",
     ]
 
-    print("\n判定: モデルの切り替えが必要です。")
+    print("\n判定: Cloud Run の更新が必要です。")
+
+    if model_changed:
+        print("- モデルが変更されています。")
+
+    if image_changed:
+        print("- コンテナイメージが変更されています。")
 
     if not args.apply:
         print("\n--- Dry Run ---")
