@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import subprocess
 
 
@@ -7,6 +8,7 @@ SELECTION_FILE = "selected_model.json"
 
 SERVICE_NAME = "gcp-ml-inference-demo"
 REGION = "asia-northeast1"
+GCLOUD = "gcloud.cmd" if os.name == "nt" else "gcloud"
 
 IMAGE = (
     "asia-northeast1-docker.pkg.dev/"
@@ -22,13 +24,12 @@ def cloud_run_service_exists():
     """Cloud Runサービスが存在するか確認する。"""
 
     command = [
-        "gcloud.cmd",
+        GCLOUD,
         "run",
         "services",
         "list",
         f"--region={REGION}",
-        f"--filter=metadata.name={SERVICE_NAME}",
-        "--format=value(metadata.name)",
+        "--format=value(name)",
     ]
 
     result = subprocess.run(
@@ -42,16 +43,21 @@ def cloud_run_service_exists():
         raise RuntimeError(
             "Cloud Runの状態確認に失敗しました。\n"
             + result.stderr
-        )
+    )
 
-    return result.stdout.strip() == SERVICE_NAME
+    service_names = {
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip()
+    }
 
+    return SERVICE_NAME in service_names
 
 def get_current_model_object():
     """Cloud Runで実際に使用中のMODEL_OBJECTを取得する。"""
 
     command = [
-        "gcloud.cmd",
+        GCLOUD,
         "run",
         "services",
         "describe",
@@ -117,7 +123,7 @@ def main():
         )
 
         command = [
-            "gcloud.cmd",
+            GCLOUD,
             "run",
             "deploy",
             SERVICE_NAME,
@@ -173,7 +179,7 @@ def main():
         return
 
     command = [
-        "gcloud.cmd",
+        GCLOUD,
         "run",
         "services",
         "update",
